@@ -33,4 +33,3 @@
 - 使用 `LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.` 命令进行环境变量的配置 <p>
 - 使用 `export LD_LIBRARY_PATH` 命令局部环境变量声明为全局环境变量
 
-鲜牛奶年年男男女女男男女女男男女女男男女女男男女女男男女女嗯一直

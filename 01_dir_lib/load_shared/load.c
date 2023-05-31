@@ -1,4 +1,6 @@
 /* 动态库的动态加载 */
+// 使用以下面命令进行编译, -ldl表示需要链接 dl库
+// gcc load.c -ldl -o load
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -34,13 +36,17 @@ int main(void){
         fprintf(stderr, "dlsym: %s\n", dlerror());
         return -1;
     }
-
-
-
     // 使用函数
+    int a = 123;
+    int b = 456;
+    show(a, '+', b, add(a, b));
+    show(a, '-', b, sub(a, b));
 
     // 卸载动态库
-
+    if(dlclose(handle)){
+        fprintf(stderr, "dlclose: %s\n", dlerror());
+        return -1;
+    }
     return 0;
 }
 
