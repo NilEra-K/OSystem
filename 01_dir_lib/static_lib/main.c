@@ -1,7 +1,8 @@
 /* 调用模块 */
 #include <stdio.h>
-#include "calc.h"
-#include "show.h"
+// #include "calc.h"
+// #include "show.h"
+#include "math.h"
 
 int main(void){
     int a = 123, b = 456;
