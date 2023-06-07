@@ -1,0 +1,3 @@
+fd1 = 3
+fd2 = 1
+Hello Linux_
