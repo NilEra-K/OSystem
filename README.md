@@ -1764,7 +1764,7 @@ _**`int accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen)`**_
 
 _**`int connect(int sockfd, struct sockaddr* addr, socklen_t addrlen)`**_
 - 使用时需引用 `#include <sys/socket.h>` 头文件
-- 功能 : 
+- 功能 : 请求连接
 - 参数 : <p>
   **sockfd :** 套接字的描述符 <p>
   **addr :** 对方的地址结构 <p>
@@ -1783,8 +1783,8 @@ _**`ssize_t send(int sockfd, void const* buf, size_t count, int flags)`**_
   `MSG_DONTROUTE` 不查路由表, 直接在本地网络中寻找目的主机<p>
   **返回值 :** 成功返回实际发送的字节数, 失败返回 -1
 
-**编程模型** <p>
-| 步骤 | 服务器 | 说明 | 客户机 |  说明 | 步骤 |
+**TCP 协议编程模型** <p>
+| 步骤 | 说明 | 服务器 | 客户机 |  说明 | 步骤 |
 | :-: | :-: | :-: | :-: | :-: | :-: |
 | 1 | 创建套接字 | socket | socker | 创建套接字 | 1 |
 | 2 | 准备地址结构 | sockaddr_in | sockaddr_in | 准备地址结构 | 2 |
@@ -1807,12 +1807,52 @@ _**`ssize_t send(int sockfd, void const* buf, size_t count, int flags)`**_
 - **B.** 如果客户机此时正试图通过 `send` 函数发送请求包, 那么该函数并不会失败, 但会导致对方以 *RST* 分节作出响应, 该响应分节甚至会先于 *FIN* 分节被紧随其后的 `recv` 函数收到并返回 `-1` , 同时置 `errno` 为 **ECONNRESET**, 这也是终止通信的条件之一
 
 ***服务器主机不可达(主机崩溃、网络中断、路由失效等)*** <p>
-- 在服务器主机不可达的情况下, 无论是客户机还是服务器, 他们的 TCP协议栈都不可能再有任何数据分节的变化, 因此, 客户机通过 `send` 函数, 发送完请求包以后, 会阻塞在 `recv` 函数
+- 在服务器主机不可达的情况下, 无论是客户机还是服务器, 他们的 TCP协议栈都不可能再有任何数据分节的变化, 因此, 客户机通过 `send` 函数, 发送完请求包以后, 会阻塞在 `recv` 函数上等待来自服务器的响应包, 这时客户机的 TCP协议栈会持续地重传数据分节, 试图得到对方的 *ACK* 应答, 源自伯克利的实现最多重传 **12次** , 最长等待 **9分钟**, 当 TCP最终决定放弃时, 会通过 `recv` 函数向用户进程返回失败, 并置 `errno` 为 **ETIMEOUT** 或 **EHOSTUNREACH** 或 **ENETUNREACH**, 在重传过程中会放弃以后, 即使服务器主机被重启, 或者通信线路被恢复, 由于 TCP协议栈仍然丢失了先前与连接有关的信息, 通信依然无法继续, 对所收到的一切数据一律响应 *RST* 分节, 只有在重新建立 TCP连接后, 才能继续通信
 
+**UDP协议** <p>
+**UDP 协议的基本特征** <p>
+***UDP 不提供客户机与服务器的连接*** <p>
+UDP的客户机与服务器不必存在长期关系, 一个 UDP的客户机在通过套接字向一个 UPD的服务器发送了一个数据报之后, 马上可以通过 ***同一个套接字*** 向 ***另一个 UDP服务器*** 发送另一个数据报, 同样, 一个 UDP服务器也可以通过同一个套接字接收来自不同客户机的数据报
 
+***UDP 不保证数据传输的可靠性和有序性*** <p>
+UDP的协议栈不提供诸如确认、超时重传、RTT估算以及序列号等机制. 因此 UDP数据报在网络传输的过程中可能丢失, 也可能重复, 甚至重新排序, 应用程序必须自己处理这些情况
 
+***UDP 不提供流量控制*** <p>
+UDP的协议栈底层只是一位一味的按照发送方的速率发送数据, 全然不顾接收方的缓冲区是否装的下
 
+***UDP 是全双工的*** <p>
+在一个 UDP套接字上, 应用程序杂任何时候都既可以发送数据也可以接收数据
 
+> 由此看来 UDP 貌似一无是处, 但是实际上其往往用于**高速传输**场景, 当我们需要传输**对速度有要求但是对安全没有要求的数据的时候** 可以使用 UDP协议, 例如: 电影播放, 游戏画面的展示等
+
+**相关函数 :** <p>
+_**`ssize_t recvfrom(int sockfd, void* buf, size_t count, int flags, struct sockaddr* src_addr, socklen_t* addrlen)`**_
+- 使用时需引用 `#include <sys/socket.h>` 头文件
+- 功能 : 指明从哪里接收数据
+- 参数 : 前四个参数和 `recv` 相同 <p>
+  **src_addr :** 输出源主机的地址信息 <p>
+  **addrlen :** 输出源主机的地址信息字节数 <p>
+  **返回值 :** 成功返回实际接收的字节数, 失败返回 -1
+
+_**`ssize_t recvfrom(int sockfd, void const* buf, size_t count, int flags, struct sockaddr* const* dest_addr, socklen_t* addrlen)`**_
+- 使用时需引用 `#include <sys/socket.h>` 头文件
+- 功能 : 指明向哪里发送数据
+- 参数 : 前四个参数和 `send` 相同 <p>
+  **dest_addr :** 目的主机的地址信息 <p>
+  **addrlen :** 目的主机的地址信息的字节数 <p>
+  **返回值 :** 成功返回实际发送的字节数, 失败返回 -1
+
+**UDP 协议编程模型** <p>
+| 步骤 | 说明 | 服务器 | 客户机 | 说明 | 步骤 |
+| :-: | :-: | :-: | :-: | :-: | :-: |
+| 1 | 创建套接字 | socket | socket | 创建套接字| 1 |
+| 2 | 准备地址结构 | sockaddr_in | sockaddr_in | 准备地址结构 | 2 |
+| 3 | 绑定地址 | bind| - | - | - |
+| 4 | 接收请求 | recvfrom | sendto | 发送请求 | 3 |
+| 5 | 发送请求 | sendto | recvfrom | 接收请求 | 4 |
+| 6 | 关闭套接字 | close | close | 关闭套接字 | 5 |
+
+> UDP服务器的阻塞焦点不在 `accept` 函数上 (因为UDP压根不需要 `accept`), 而是在 `recvfrom` 上, 任何一个 UDP客户机通过 `sendto` 函数发送的请求数据都可以被 `recvfrom` 函数返回给 UDP服务器, 其输出的客户机地址结构 src_addr 可直接用于向客户机返回响应时调用 `sendto` 函数的输入 `dest_addr` 
 
 
 
