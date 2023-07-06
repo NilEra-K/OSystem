@@ -1854,6 +1854,53 @@ _**`ssize_t recvfrom(int sockfd, void const* buf, size_t count, int flags, struc
 
 > UDP服务器的阻塞焦点不在 `accept` 函数上 (因为UDP压根不需要 `accept`), 而是在 `recvfrom` 上, 任何一个 UDP客户机通过 `sendto` 函数发送的请求数据都可以被 `recvfrom` 函数返回给 UDP服务器, 其输出的客户机地址结构 src_addr 可直接用于向客户机返回响应时调用 `sendto` 函数的输入 `dest_addr` 
 
+**域名解析** <p>
+- IP 地址是网络上标识站点的数字地址, 为了方便记忆, 采用域名来代替 IP 地址表示站点地址
+- 域名解析就是域名到 IP 地址的转换过程, 域名的解析工作由 *DNS* 服务器完成
+- 当应用程序需要将一个主机与名映射为 IP 地址时, 就调用域名解析函数, 解析函数将带转换的域名放在 *DNS请求* 中, 以 *UDP报文* 的方式发给本地域名服务器, 本地的域名服务器查到域名后, 将对应的 IP 地址放在应答报文中返回
+- *例如: www.baidu.com*
+
+**相关函数** <p>
+_**`struct hostent* gethostbyname(char const* hostname)`**_
+- 使用时需引用 `#include <netdb.h>` 头文件
+- 功能 : 通过参数所传的主机域名, 获取主机信息
+- 参数 : <p>
+  **hostname :** 主机域名 <p>
+  **返回值 :** 函数成功返回主机信息的结构体指针, 失败返回 -1
+- 注意: 该函数需要在联网条件下使用
+- `struct hostent{...};` 结构体成员如下
+  ```
+  struct hostent{
+    char *h_name;       // 主机官方名
+    char **h_aliases;   // 主机别名表
+    int h_addrtype;     // 地址类型
+    int h_length;       // 地址长度
+    char **h_addr_list; // IP 地址表
+  };
+  ```
+  **主机官方名 :** 主机官方名有且只有一个 <p>
+  **主机别名表 :** 主机可以有 0个或很多个别名, 我们平时用的有可能只是主机服务器的别名 <p>
+  **IP 地址表 :** 指向 `struct in_addr*` 结构体类新的指针 <p>
+
+**HTTP 协议** <p>
+我们在通过浏览器获取网络资源的过程中, 一直在遵循 *HTTP协议* , 客户端终端和服务器终端请求和应答的标准, 客户端发起一个 *HTTP请求* 到服务器的指定端口, ***默认80*** , 应答服务器上存储着一些资源, 比如 HTML文件和图像等 <p>
+相当于一种对数据格式组织的一种统一要求, 像是思想报告这种东西 <p>
+浏览器地址栏输入 *URL* , 按下回车后会经历的历程:
+1. 浏览器向 DNS服务器请求解析该 URL中的域名所对应的 IP地址
+2. 根据解析后的 *IP地址* 和 *默认端口 80* 与服务器建立 TCP连接
+3. 浏览器发出 HTTP请求
+4. 服务器对浏览器的请求作出响应
+
+![avatar](./07_dir_net/src/httpPost.png)
+
+**HTTP 的请求和响应** <p>
+![avatar](./07_dir_net/src/PostGet.png)
+
+- 请求行由 **请求方法字段、URL字段和 HTTP协议版本字段** 三个字段组成, 他们用空格分隔, 例如 `GET /index.html HTTP/1.1`
+- HTTP1.0 定义了三种请求方法: `GET` , `POST` , `HEAD`方法
+- HTTP1.1 新增了五种请求方法: `OPTIONS` , `PUT` , `DELETE` , `TRACE` 和 `CONNECT` 方法
+- 其中 `GET` 是最常用的请求方法, 用来获取服务器的数据
+
 
 
 
