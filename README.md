@@ -1,6 +1,5 @@
 # OSystem
-A personal project to learning Unix-C on Linux(Ubuntu 22.04 LTS) <p>
-个人Unix C学习项目
+A personal project to learning Unix-C on Linux(Ubuntu 22.04 LTS)
 
 ## 🎇UC 
 使用 C语言在操作系统 Unix上的用户编程, Unix系统向用户提供了大量的接口, 用户通过系统提供的接口, 可以使用操作系统提供的服务
